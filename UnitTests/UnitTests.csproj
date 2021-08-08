@@ -76,12 +76,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RulesEngine\RulesEngine.csproj">
-      <Project>{5175a941-42c5-42ef-99ac-1a2f2c29ba8d}</Project>
-      <Name>RulesEngine</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Analyzer Include="..\packages\NSubstitute.Analyzers.CSharp.1.0.14\analyzers\dotnet\cs\NSubstitute.Analyzers.CSharp.dll" />
     <Analyzer Include="..\packages\NSubstitute.Analyzers.CSharp.1.0.14\analyzers\dotnet\cs\NSubstitute.Analyzers.Shared.dll" />
   </ItemGroup>
