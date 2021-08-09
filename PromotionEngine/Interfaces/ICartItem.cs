@@ -4,7 +4,8 @@
     {
         IItem Item { get; }
         double Amount { get; }
-        bool IsPromoted { get; set; }
+        bool IsPromoted { get;}
+        IPromotion Promotion { get; set; }
     }
 
     public interface IItem

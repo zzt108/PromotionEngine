@@ -4,7 +4,7 @@
 
     public interface ICart
     {
-        IEnumerable<ICartItem> Items { get; }
+        IList<ICartItem> Items { get; }
         double Sum { get; }
     }
 }
