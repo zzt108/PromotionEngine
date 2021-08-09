@@ -2,6 +2,6 @@
 {
     public interface IPromotions
     {
-        void CheckAll(ICart cart);
+        ICart CheckAll(ICart cart);
     }
 }

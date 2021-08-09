@@ -5,5 +5,6 @@
     public interface ICart
     {
         IEnumerable<ICartItem> Items { get; }
+        double Sum { get; }
     }
 }

@@ -9,11 +9,12 @@ using PromotionEngine;
 
 namespace UnitTests
 {
+    using NSubstitute.Core;
 
     [TestClass]
     public class UnitTests
     {
-        class Context
+        private class Context
         {
             public IItem ItemA { get; set; }
             public IItem ItemB { get; set; }
@@ -29,7 +30,7 @@ namespace UnitTests
             public IPromotion PromotionCD { get; set; }
         }
 
-        private Context createPromotions()
+        private Context CreatePromotions()
         {
             var result = new Context
             {
@@ -39,6 +40,8 @@ namespace UnitTests
                 ItemD = Substitute.For<IItem>(),
 
                 ScenarioA = Substitute.For<ICart>(),
+                ScenarioB = Substitute.For<ICart>(),
+                ScenarioC = Substitute.For<ICart>(),
 
                 Promotion3A = Substitute.For<IPromotion>(),
                 Promotion2B = Substitute.For<IPromotion>(),
@@ -77,6 +80,7 @@ namespace UnitTests
             #endregion
 
             result.ScenarioA.Items.Returns(new List<ICartItem>() {ci1, ci2, ci3});
+            result.ScenarioA.Sum.Returns(100);
 
             #region Scenario B
 
@@ -98,6 +102,7 @@ namespace UnitTests
             #endregion
 
             result.ScenarioB.Items.Returns(new List<ICartItem>() {cib1, cib2, cib3});
+            result.ScenarioB.Sum.Returns(420); // original value, without promotion
 
             #region Scenario C
 
@@ -124,6 +129,7 @@ namespace UnitTests
             #endregion
 
             result.ScenarioC.Items.Returns(new List<ICartItem>() {cic1, cic2, cic3, cic4});
+            result.ScenarioC.Sum.Returns(335); // original value, without promotion
 
             var cartBPromotion3A = Substitute.For<ICartItem>();
             cartBPromotion3A.Amount.Returns(-20);
@@ -135,7 +141,7 @@ namespace UnitTests
             result.Promotion3A.Check(result.ScenarioC).Returns(cartBPromotion3A);
 
             var cartBPromotion2B = Substitute.For<ICartItem>();
-            cartBPromotion2B.Amount.Returns(-15);
+            cartBPromotion2B.Amount.Returns(-15 * 2);
             cartBPromotion2B.Item.Returns(result.ItemB);
             cartBPromotion2B.IsPromoted.Returns(true);
 
@@ -144,9 +150,9 @@ namespace UnitTests
             result.Promotion2B.Check(result.ScenarioC).Returns(cartBPromotion2B);
 
             var cartCPromotionCD = Substitute.For<ICartItem>();
-            cartBPromotion2B.Amount.Returns(-5);
-            cartBPromotion2B.Item.Returns(result.ItemD);
-            cartBPromotion2B.IsPromoted.Returns(true);
+            cartCPromotionCD.Amount.Returns(-5);
+            cartCPromotionCD.Item.Returns(result.ItemD);
+            cartCPromotionCD.IsPromoted.Returns(true);
 
             result.PromotionCD.Check(result.ScenarioA).ReturnsNull();
             result.PromotionCD.Check(result.ScenarioB).ReturnsNull();
@@ -156,8 +162,54 @@ namespace UnitTests
         }
 
         [TestMethod]
-        public void Test1()
+        public void TestScenarioA()
         {
+            var context = this.CreatePromotions();
+            var promotions = Substitute.For<IPromotions>();
+
+            // No change is expected
+            promotions.CheckAll(context.ScenarioA).Returns(context.ScenarioA);
+
+            // Actual tests
+            context.Promotion3A.Check(context.ScenarioA).Should().BeNull("No promotion 3A can be applied");
+            context.Promotion2B.Check(context.ScenarioA).Should().BeNull("No promotion 2B can be applied");
+            context.PromotionCD.Check(context.ScenarioA).Should().BeNull("No promotion CD can be applied");
+
+            var result = promotions.CheckAll(context.ScenarioA);
+            result.Sum.Should().Be(100);
+            result.Items.Count().Should().Be(3);
+            result.Items.Count(item => item.IsPromoted).Should().Be(0);
         }
+
+        [TestMethod]
+        public void TestScenarioB()
+        {
+            var context = this.CreatePromotions();
+            var promotions = Substitute.For<IPromotions>();
+
+            var cartBItems = context.ScenarioB.Items.ToList();
+            var p3A = context.Promotion3A.Check(context.ScenarioB);
+            cartBItems.Add(p3A);
+            var p2B = context.Promotion2B.Check(context.ScenarioB);
+            cartBItems.Add(p2B);
+            var pCD = context.PromotionCD.Check(context.ScenarioB);
+            var newCartB = Substitute.For<ICart>();
+            newCartB.Items.Returns(cartBItems);
+            newCartB.Sum.Returns(370);
+            promotions.CheckAll(context.ScenarioB).Returns(newCartB);
+
+            // Actual tests
+            p3A.IsPromoted.Should().BeTrue("A promotion for 3A should be generated");
+            p3A.Amount.Should().Be(-20);
+            p2B.IsPromoted.Should().BeTrue("A promotion for 2B should be generated");
+            p2B.Amount.Should().Be(-30);
+            pCD.Should().BeNull("Promotion CD is not valid on Scenario B.");
+
+            var result = promotions.CheckAll(context.ScenarioB);
+            result.Sum.Should().Be(context.ScenarioB.Sum + p3A.Amount + p2B.Amount);
+            result.Items.Count().Should().Be(5);
+            result.Items.Count(item => item.IsPromoted).Should().Be(2);
+        }
+
     }
 }
