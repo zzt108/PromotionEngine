@@ -211,5 +211,38 @@ namespace UnitTests
             result.Items.Count(item => item.IsPromoted).Should().Be(2);
         }
 
+        [TestMethod]
+        public void TestScenarioC()
+        {
+            var context = this.CreatePromotions();
+            var promotions = Substitute.For<IPromotions>();
+
+            var cartCItems = context.ScenarioC.Items.ToList();
+            var p3A = context.Promotion3A.Check(context.ScenarioC);
+            cartCItems.Add(p3A);
+            var p2B = context.Promotion2B.Check(context.ScenarioC);
+            cartCItems.Add(p2B);
+            var pCD = context.PromotionCD.Check(context.ScenarioC);
+            cartCItems.Add(pCD);
+
+            var newCartC = Substitute.For<ICart>();
+            newCartC.Items.Returns(cartCItems);
+            newCartC.Sum.Returns(280);
+            promotions.CheckAll(context.ScenarioB).Returns(newCartC);
+
+            // Actual tests
+            p3A.IsPromoted.Should().BeTrue("A promotion for 3A should be generated");
+            p3A.Amount.Should().Be(-20);
+            p2B.IsPromoted.Should().BeTrue("A promotion for 2B should be generated");
+            p2B.Amount.Should().Be(-30);
+            pCD.IsPromoted.Should().BeTrue("A promotion for CD should be generated");
+            pCD.Amount.Should().Be(-5);
+
+            var result = promotions.CheckAll(context.ScenarioB);
+            result.Sum.Should().Be(context.ScenarioC.Sum + p3A.Amount + p2B.Amount + pCD.Amount);
+            result.Items.Count().Should().Be(7);
+            result.Items.Count(item => item.IsPromoted).Should().Be(3);
+        }
+
     }
 }
